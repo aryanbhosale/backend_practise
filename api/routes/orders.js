@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router(); 
 const mongoose = require('mongoose'); //import mongoose
 
+const checkAuth = require("../middleware/check-auth"); //importing checkAuth middleware
+
 const Order = require('../models/order'); 
 const Product = require('../models/product'); //import the product.js model
 
-router.get('/', (req, res, next) => {
+router.get('/', checkAuth, (req, res, next) => {
     Order.find().select("product quantity _id").populate('product', 'name').exec().then((result) => {
         res.status(200).json({
             count: result.length,
@@ -28,7 +30,7 @@ router.get('/', (req, res, next) => {
     });
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', checkAuth, async (req, res, next) => {
     try {
         const product = await Product.findById(req.body.productId); //checking whether we do have a product
 
@@ -63,7 +65,7 @@ router.post('/', async (req, res, next) => {
 });
 
 
-router.get('/:orderId', (req, res, next) => {
+router.get('/:orderId', checkAuth, (req, res, next) => {
     Order.findById(req.params.orderId).select("product quantity _id").populate('product', "name price").exec().then((result) => {
         if(!result) {
             res.status(404).json({
@@ -84,7 +86,7 @@ router.get('/:orderId', (req, res, next) => {
     });
 });
 
-router.delete('/:orderId', (req, res, next) => {
+router.delete('/:orderId', checkAuth, (req, res, next) => {
     Order.deleteOne({ _id: req.params.orderId }).exec().then((result) => {
         res.status(200).json({
             message: "Order deleted successfully",

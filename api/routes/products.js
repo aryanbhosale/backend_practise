@@ -3,6 +3,8 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
 
+const checkAuth = require("../middleware/check-auth"); //import the check-auth middleware for route protection
+
 const storage = multer.diskStorage({ //pass 2 JS Objects to configure - multer will execute these 2 functions everytime a new file is received
   destination: function(req, res, cb) { //a function that defines where the incoming file is stored and we get access to the full request in this function to the file into a callback, so all of that is passed into that function automatically by multer
     cb(null, './uploads/'); //in the callback we pass any potential error, in our case it's null, followed by the destination(I'll go with uploads since I used it before)
@@ -62,7 +64,9 @@ router.get("/", (req, res, next) => {
     });
 });
 
-router.post("/", upload.single('productImage'), (req, res, next) => { //single means that it accepts and parses only one file
+//add the checkAuth middleware as a parameter to the POST route after upload.single() so that it gets parsed as form-data and not JSON using the upload middleware - this is because our app uses a JSON body parser and our POST request to create a new product has a type of form-data, which is only being taken care of by the uploads middleware
+//I won't execute it like (), I'll just pass it normally and Express will automatically pass the request into it 
+router.post("/", checkAuth, upload.single('productImage'), (req, res, next) => { 
   console.log(req.file);
   const product = new Product({
     _id: new mongoose.Types.ObjectId(), 
@@ -128,7 +132,7 @@ router.get("/:productId", (req, res, next) => {
     });
 });
 
-router.patch('/:productId', (req, res, next) => { 
+router.patch('/:productId', checkAuth, (req, res, next) => { 
     const id = req.params.productId;
     const updateOps = {}; //this is a dynamic approach that allows us to update all kinds of data
     for(const ops of req.body) {
@@ -154,7 +158,7 @@ router.patch('/:productId', (req, res, next) => {
     }); 
 });
 
-router.delete("/:productId", (req, res, next) => {
+router.delete("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   Product.deleteOne({
     _id: id, //this essentially acts as a filter and removes any product object whose ID matches with the ID in the request parameters
